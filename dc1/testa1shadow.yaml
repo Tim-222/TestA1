@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: testa1shadow
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testa1shadow
+  labels:
+    app: testa1shadow
+spec:
+  ports:
+  - port: 9987
+    targetPort: 9998   
+    name: http
+  selector:
+    app: testa1shadow
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testa1shadow-v4
+  labels:
+    version: v4
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testa1shadow
+  template:
+    metadata:
+      labels:
+        app: testa1shadow
+        version: v4
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+    spec:
+      containers:
+      - name: testa1shadow
+        image: beaconacr.azurecr.io/beacondt:test       
+        resources:
+          requests:
+            cpu: 100m
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /opt/matlab/licenses
+            name: licenses
+      - name: a1pe
+        image: timfa/a1pe:beacon       
+        resources:
+          requests:
+            cpu: 100m
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9998
+      imagePullSecrets:
+        - name: beacon
+        - name: foster
+      volumes:
+      - name: licenses
+        persistentVolumeClaim:
+          claimName: licenses-pv-claim
